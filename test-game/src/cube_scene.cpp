@@ -16,10 +16,10 @@ struct Face {
 };
 
 constexpr psyqo::Vec3 c_cubeVertices[8] = {
-    {.x = -0.1, .y = -0.1, .z = -0.1}, {.x = 0.1, .y = -0.1, .z = -0.1},
-    {.x = -0.1, .y = 0.1,  .z = -0.1}, {.x = 0.1, .y = 0.1,  .z = -0.1},
-    {.x = -0.1, .y = -0.1, .z = 0.1},  {.x = 0.1, .y = -0.1, .z = 0.1},
-    {.x = -0.1, .y = 0.1,  .z = 0.1},  {.x = 0.1, .y = 0.1,  .z = 0.1},
+    {.x = -0.05, .y = -0.05, .z = -0.05}, {.x = 0.05, .y = -0.05, .z = -0.05},
+    {.x = -0.05, .y = 0.05,  .z = -0.05}, {.x = 0.05, .y = 0.05,  .z = -0.05},
+    {.x = -0.05, .y = -0.05, .z = 0.05},  {.x = 0.05, .y = -0.05, .z = 0.05},
+    {.x = -0.05, .y = 0.05,  .z = 0.05},  {.x = 0.05, .y = 0.05,  .z = 0.05},
 };
 
 constexpr Face c_cubeFaces[6] = {
@@ -56,7 +56,7 @@ void CubeScene::frame() {
     gpu.getNextClear(clear.primitive, c_bg);
     gpu.chain(clear);
 
-    psyqo::GTE::write<psyqo::GTE::Register::TRZ, psyqo::GTE::Unsafe>(512);
+    psyqo::GTE::write<psyqo::GTE::Register::TRZ, psyqo::GTE::Unsafe>(900);
 
     auto transform = psyqo::SoftMath::generateRotationMatrix33(m_rot, psyqo::SoftMath::Axis::X, g_madnightEngine.m_trig);
     auto roty = psyqo::SoftMath::generateRotationMatrix33(m_rot, psyqo::SoftMath::Axis::Y, g_madnightEngine.m_trig);
