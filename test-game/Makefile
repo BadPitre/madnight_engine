@@ -13,16 +13,6 @@ SRCS := $(call rwildcard,src/,*.cpp)
 CXXFLAGS = -std=c++20
 CPPFLAGS_debug = -g -O0
 
-OUTDIR = build
-
 include ../madnight-engine.mk
 include ../third_party/nugget/psyqo-paths/psyqo-paths.mk
 include ../third_party/nugget/psyqo/psyqo.mk
-
-.PHONY: all
-all: $(TARGET).$(TYPE)
-	@mkdir -p $(OUTDIR)
-	@mv -f $(TARGET).ps-exe $(OUTDIR)/
-	@mv -f $(TARGET).elf $(OUTDIR)/ 2>/dev/null || true
-	@mv -f $(TARGET).map $(OUTDIR)/ 2>/dev/null || true
-	@echo "Build complete: $(OUTDIR)/$(TARGET).ps-exe"
