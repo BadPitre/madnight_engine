@@ -1,0 +1,93 @@
+#ifndef _GAMEOBJECT_H
+#define _GAMEOBJECT_H
+
+#include "EASTL/fixed_string.h"
+#include "psyqo/fixed-point.hh"
+#include "psyqo/fragments.hh"
+#include "psyqo/trigonometry.hh"
+#include "psyqo/vector.hh"
+
+#include "../../helpers/file_defs.hh"
+#include "../../mesh/mesh_manager.hh"
+#include "../../textures/texture_manager.hh"
+#include "../collision_types.hh"
+#include "gameobject_defs.hh"
+
+static constexpr uint8_t INVALID_GAMEOBJECT_ID = 255;
+
+enum GameObjectQuadType {
+  Quad,
+  TexturedQuad,
+  GouraudQuad,
+  GouraudTextureQuad,
+};
+
+typedef struct _GAMEOBJECT_ROTATION {
+  psyqo::Angle x, y, z;
+} GameObjectRotation;
+
+enum RenderFlags { RF_NONE = 0, RF_DISTANCE_CHECK = 1 };
+
+class GameObject final {
+  eastl::fixed_string<char, MAX_CDROM_FILE_NAME_LEN> m_name = "";
+  uint8_t m_id = INVALID_GAMEOBJECT_ID;
+  GameObjectQuadType m_quadType = GameObjectQuadType::Quad;
+  GameObjectTag m_tag = GameObjectTag::NONE;
+  psyqo::Vec3 m_pos = {0, 0, 0};
+  GameObjectRotation m_rotation = {0, 0, 0};
+  psyqo::Matrix33 m_rotationMatrix = {0};
+  MeshBin *m_mesh = nullptr;
+  TimFile *m_texture = nullptr;
+  OBB m_obb = {0};
+  CollisionType m_collisionType = CollisionType::SOLID;
+  uint16_t m_renderFlags = 0;
+
+  void GenerateRotationMatrix(void);
+  void GenerateOBB(void);
+  void UpdateOBB(void);
+
+public:
+  GameObject() = default;
+  GameObject(const char *name, psyqo::Vec3 pos, GameObjectRotation rotation, GameObjectTag tag, uint8_t id) {
+    m_name = name;
+    m_pos = pos;
+    m_rotation = rotation;
+    m_tag = tag;
+    m_id = id;
+
+    GenerateRotationMatrix();
+  };
+  void Destroy(void);
+
+  const eastl::fixed_string<char, MAX_CDROM_FILE_NAME_LEN> &name() { return m_name; }
+  const uint8_t &id() const { return m_id; };
+  const psyqo::Vec3 &pos() const { return m_pos; }
+
+  const psyqo::Vec3 *posPtr() const { return &m_pos; }
+  psyqo::Vec3 *posPtr() { return &m_pos; }
+
+  const GameObjectRotation &rotation() const { return m_rotation; }
+  const psyqo::Matrix33 &rotationMatrix() const { return m_rotationMatrix; }
+  const MeshBin *mesh() const { return m_mesh; }
+  MeshBin *mesh() { return m_mesh; }
+  const TimFile *texture() const { return m_texture; }
+  const GameObjectTag &tag() { return m_tag; }
+  const GameObjectQuadType &quadType() { return m_quadType; }
+  const OBB &obb() { return m_obb; }
+
+  void SetPosition(const psyqo::Vec3& pos);
+  void SetPosition(psyqo::FixedPoint<12> x, psyqo::FixedPoint<12> y, psyqo::FixedPoint<12> z);
+  void SetRotation(const GameObjectRotation &rotation);
+  void SetRotation(psyqo::Angle x, psyqo::Angle y, psyqo::Angle z);
+  void SetMesh(const char *meshName);
+  void SetTexture(const char *textureName);
+  // note: doesn't actually do anything yet. need to figure it out later when its important
+  void SetQuadType(const GameObjectQuadType quadType) { m_quadType = quadType; }
+  void SetAsTrigger(const psyqo::Vec3 &size);
+  bool HasRenderFlag(const RenderFlags &rf) { return m_renderFlags & (1 << rf); }
+  void SetRenderFlag(const RenderFlags &rf) { m_renderFlags |= (1 << rf); }
+  void ClearRenderFlag(const RenderFlags &rf) { m_renderFlags &= ~(1 << rf); }
+  void ClearRenderFlags(void) { m_renderFlags = RF_NONE; }
+};
+
+#endif

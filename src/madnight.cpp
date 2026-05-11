@@ -1,0 +1,72 @@
+/* based off the psyqo cube example */
+
+#include "psyqo/scene.hh"
+
+#include "core/debug/debug_menu.hh"
+#include "helpers/cdrom.hh"
+#include "helpers/load_queue.hh"
+#include "madnight.hh"
+#include "render/renderer.hh"
+
+#include "game.hh"
+#include "scenes/loading.hh"
+#include "sound/sound_manager.hh"
+
+using namespace psyqo::fixed_point_literals;
+
+// Our global application object. This is the only global
+// object in this whole example. It will hold all of the
+// other necessary classes.
+MadnightEngine g_madnightEngine;
+
+static LoadingScene loadingScene;
+
+void MadnightEngine::prepare() {
+  // gpu config comes first, along with initialize.
+  // once we call initialize then we can start using the vram etc.
+  psyqo::GPU::Configuration gpu_config;
+  gpu_config.set(psyqo::GPU::Resolution::W320)
+      .set(psyqo::GPU::VideoMode::NTSC)
+      .set(psyqo::GPU::ColorMode::C15BITS)
+      .set(psyqo::GPU::Interlace::PROGRESSIVE);
+  gpu().initialize(gpu_config);
+
+  // hardware inits
+  CDRomHelper::init();
+  SoundManager::Init();
+  // Unlike the `SimplePad` class, the `AdvancedPad` class doesn't need to be initialized
+  // in the `start` method of the root `Scene` object. It can be initialized here.
+  // PollingMode::Fast is used to reduce input lag, but it will increase CPU usage.
+  // PollingMode::Normal is the default, and will poll one port per frame.
+  m_input.initialize(psyqo::AdvancedPad::PollingMode::Fast);
+
+  // gpu inits
+  Renderer::Init(gpu());
+
+  // our application inits
+  DebugMenu::Init();
+}
+
+void MadnightEngine::createScene() {
+  m_initialLoadRoutine = InitialLoad();
+  m_initialLoadRoutine.resume();
+}
+
+psyqo::Coroutine<> MadnightEngine::InitialLoad(void) { co_await g_madnightEngineGame.InitialLoad(); }
+
+void MadnightEngine::SwitchScene(psyqo::Scene *newScene, bool keepPrevious) {
+  if (!keepPrevious)
+    popScene();
+
+  pushScene(newScene);
+}
+
+psyqo::Coroutine<> MadnightEngine::HardLoadingScreen(eastl::vector<LoadQueue> &&files, psyqo::Scene *postLoadScene) {
+  popScene();
+  pushScene(&loadingScene);
+
+  co_await loadingScene.LoadFiles(eastl::move(files), true);
+
+  popScene();
+  pushScene(postLoadScene);
+}
