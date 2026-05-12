@@ -10,11 +10,13 @@
 #include "psyqo/vector.hh"
 
 class CubeScene final : public psyqo::Scene {
+  public:
     static constexpr unsigned ORDERING_TABLE_SIZE = 1024;
     static constexpr unsigned NUM_CUBE_FACES = 6;
     static constexpr unsigned NUM_CUBES = 5;
     static constexpr unsigned MAX_QUADS = NUM_CUBES * NUM_CUBE_FACES;
 
+  private:
     void start(StartReason reason) override;
     void frame() override;
 
