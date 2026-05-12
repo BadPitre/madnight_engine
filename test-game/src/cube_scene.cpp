@@ -45,14 +45,12 @@ constexpr psyqo::Vec3 c_cubePositions[CubeScene::NUM_CUBES] = {
     {.x = 0.0,  .y = 0.0,  .z = -0.3},
 };
 
-// Room layout. PS1 convention: +Y is screen-down, so the floor lives at +Y
-// and the walls at +/- X / +/- Z. Cubes float a bit above the floor.
+// Floor extent on the XZ plane. PS1 +Y is screen-down, so the floor lives at +Y.
 constexpr psyqo::FixedPoint<> c_roomMinX = -0.7_fp;
 constexpr psyqo::FixedPoint<> c_roomMaxX =  0.7_fp;
 constexpr psyqo::FixedPoint<> c_roomMinZ = -0.7_fp;
 constexpr psyqo::FixedPoint<> c_roomMaxZ =  0.7_fp;
-constexpr psyqo::FixedPoint<> c_roomFloorY =  0.4_fp;   // below camera
-constexpr psyqo::FixedPoint<> c_roomCeilY  = -0.4_fp;   // above camera (PS1 +Y is down)
+constexpr psyqo::FixedPoint<> c_roomFloorY =  0.4_fp;
 
 constexpr Quad3D c_roomQuads[CubeScene::NUM_ROOM_QUADS] = {
     // Floor (camera looks down at it)
@@ -61,43 +59,9 @@ constexpr Quad3D c_roomQuads[CubeScene::NUM_ROOM_QUADS] = {
       {.x = c_roomMinX, .y = c_roomFloorY, .z = c_roomMaxZ},
       {.x = c_roomMaxX, .y = c_roomFloorY, .z = c_roomMaxZ}},
      {.r = 60, .g = 60, .b = 60}},
-    // Back wall (+Z)
-    {{{.x = c_roomMinX, .y = c_roomCeilY,  .z = c_roomMaxZ},
-      {.x = c_roomMaxX, .y = c_roomCeilY,  .z = c_roomMaxZ},
-      {.x = c_roomMinX, .y = c_roomFloorY, .z = c_roomMaxZ},
-      {.x = c_roomMaxX, .y = c_roomFloorY, .z = c_roomMaxZ}},
-     {.r = 120, .g = 80, .b = 80}},
-    // Front wall (-Z)
-    {{{.x = c_roomMinX, .y = c_roomCeilY,  .z = c_roomMinZ},
-      {.x = c_roomMaxX, .y = c_roomCeilY,  .z = c_roomMinZ},
-      {.x = c_roomMinX, .y = c_roomFloorY, .z = c_roomMinZ},
-      {.x = c_roomMaxX, .y = c_roomFloorY, .z = c_roomMinZ}},
-     {.r = 80, .g = 120, .b = 80}},
-    // Left wall (-X)
-    {{{.x = c_roomMinX, .y = c_roomCeilY,  .z = c_roomMinZ},
-      {.x = c_roomMinX, .y = c_roomCeilY,  .z = c_roomMaxZ},
-      {.x = c_roomMinX, .y = c_roomFloorY, .z = c_roomMinZ},
-      {.x = c_roomMinX, .y = c_roomFloorY, .z = c_roomMaxZ}},
-     {.r = 80, .g = 80, .b = 140}},
-    // Right wall (+X)
-    {{{.x = c_roomMaxX, .y = c_roomCeilY,  .z = c_roomMinZ},
-      {.x = c_roomMaxX, .y = c_roomCeilY,  .z = c_roomMaxZ},
-      {.x = c_roomMaxX, .y = c_roomFloorY, .z = c_roomMinZ},
-      {.x = c_roomMaxX, .y = c_roomFloorY, .z = c_roomMaxZ}},
-     {.r = 140, .g = 140, .b = 80}},
 };
 
 constexpr psyqo::FixedPoint<> c_moveSpeed = 0.01_fp;
-// Keep the camera a bit inside the walls so near-plane clipping (which the PS1
-// doesn't do automatically) doesn't produce garbled quads.
-constexpr psyqo::FixedPoint<> c_camMargin = 0.1_fp;
-
-template <typename T>
-T clamp(T v, T lo, T hi) {
-    if (v < lo) return lo;
-    if (v > hi) return hi;
-    return v;
-}
 
 } // namespace
 
@@ -139,9 +103,6 @@ void CubeScene::frame() {
     if (pad.isButtonPressed(P, Btn::Down))  applyMove(forward, -c_moveSpeed);
     if (pad.isButtonPressed(P, Btn::Right)) applyMove(right,    c_moveSpeed);
     if (pad.isButtonPressed(P, Btn::Left))  applyMove(right,   -c_moveSpeed);
-
-    m_cameraPos.x = clamp(m_cameraPos.x, c_roomMinX + c_camMargin, c_roomMaxX - c_camMargin);
-    m_cameraPos.z = clamp(m_cameraPos.z, c_roomMinZ + c_camMargin, c_roomMaxZ - c_camMargin);
 
     // ---- Render setup ----
     int parity = gpu.getParity();
