@@ -73,8 +73,13 @@ void CubeScene::start(StartReason) {
     psyqo::GTE::write<psyqo::GTE::Register::OFX, psyqo::GTE::Unsafe>(psyqo::FixedPoint<16>(160.0).raw());
     psyqo::GTE::write<psyqo::GTE::Register::OFY, psyqo::GTE::Unsafe>(psyqo::FixedPoint<16>(120.0).raw());
     psyqo::GTE::write<psyqo::GTE::Register::H,   psyqo::GTE::Unsafe>(120);
-    psyqo::GTE::write<psyqo::GTE::Register::ZSF3, psyqo::GTE::Unsafe>(ORDERING_TABLE_SIZE / 3);
-    psyqo::GTE::write<psyqo::GTE::Register::ZSF4, psyqo::GTE::Unsafe>(ORDERING_TABLE_SIZE / 4);
+    // ZSF3 / ZSF4 are the depth-averaging scales the GTE uses to compute OTZ.
+    // The classic heuristic ZSF3 = OT_SIZE / 3 ties render distance to the OT
+    // size, so growing the OT alone doesn't push the far plane back. Keeping
+    // ZSF3 smaller (relative to OT_SIZE) extends the visible depth range at
+    // the cost of slightly coarser depth-sort resolution.
+    psyqo::GTE::write<psyqo::GTE::Register::ZSF3, psyqo::GTE::Unsafe>(ORDERING_TABLE_SIZE / 12);
+    psyqo::GTE::write<psyqo::GTE::Register::ZSF4, psyqo::GTE::Unsafe>(ORDERING_TABLE_SIZE / 16);
 }
 
 void CubeScene::frame() {

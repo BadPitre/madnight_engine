@@ -11,7 +11,7 @@
 
 class CubeScene final : public psyqo::Scene {
   public:
-    static constexpr unsigned ORDERING_TABLE_SIZE = 1024;
+    static constexpr unsigned ORDERING_TABLE_SIZE = 4096;
     static constexpr unsigned NUM_CUBE_FACES = 6;
     static constexpr unsigned NUM_CUBES = 5;
     static constexpr unsigned NUM_ROOM_QUADS = 1; // floor only
