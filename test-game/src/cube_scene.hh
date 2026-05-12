@@ -20,7 +20,8 @@ class CubeScene final : public psyqo::Scene {
     void start(StartReason reason) override;
     void frame() override;
 
-    psyqo::Angle m_cameraAngle = 0;
+    psyqo::Vec3 m_cameraPos = {.x = 0.0, .y = 0.0, .z = -0.9};
+    psyqo::Angle m_cameraYaw = 0;
     psyqo::Angle m_selfRot = 0;
 
     psyqo::OrderingTable<ORDERING_TABLE_SIZE> m_ots[2];

@@ -1,6 +1,7 @@
 #include "cube_scene.hh"
 #include "madnight.hh"
 
+#include "psyqo/advancedpad.hh"
 #include "psyqo/gte-kernels.hh"
 #include "psyqo/gte-registers.hh"
 #include "psyqo/soft-math.hh"
@@ -39,8 +40,7 @@ constexpr psyqo::Vec3 c_cubePositions[CubeScene::NUM_CUBES] = {
     {.x = 0.0,  .y = 0.0,  .z = -0.3},
 };
 
-// Camera orbits at this radius around the world origin, on the XZ plane.
-constexpr psyqo::FixedPoint<> c_cameraRadius = 0.9_fp;
+constexpr psyqo::FixedPoint<> c_moveSpeed = 0.01_fp;
 
 } // namespace
 
@@ -59,7 +59,34 @@ void CubeScene::start(StartReason) {
 void CubeScene::frame() {
     auto &gpu = g_madnightEngine.gpu();
     auto &trig = g_madnightEngine.m_trig;
+    auto &pad = g_madnightEngine.m_input;
+    using Btn = psyqo::AdvancedPad::Button;
+    constexpr auto P = psyqo::AdvancedPad::Pad::Pad1a;
 
+    // ---- Input: rotate camera with L2/R2 ----
+    if (pad.isButtonPressed(P, Btn::L2)) m_cameraYaw -= 0.01_pi;
+    if (pad.isButtonPressed(P, Btn::R2)) m_cameraYaw += 0.01_pi;
+
+    // ---- Input: move camera in its local XZ plane with the D-pad ----
+    // psyqo Y rotation Ry(yaw) maps (0,0,1) -> (-sin(yaw), 0, cos(yaw))
+    // and (1,0,0) -> (cos(yaw), 0, sin(yaw)).
+    psyqo::FixedPoint<> sinY = trig.sin(m_cameraYaw);
+    psyqo::FixedPoint<> cosY = trig.cos(m_cameraYaw);
+    psyqo::Vec3 forward = {.x = -sinY, .y = 0.0_fp, .z = cosY};
+    psyqo::Vec3 right   = {.x = cosY,  .y = 0.0_fp, .z = sinY};
+
+    auto applyMove = [&](const psyqo::Vec3 &dir, psyqo::FixedPoint<> amount) {
+        m_cameraPos.x += dir.x * amount;
+        m_cameraPos.y += dir.y * amount;
+        m_cameraPos.z += dir.z * amount;
+    };
+
+    if (pad.isButtonPressed(P, Btn::Up))    applyMove(forward,  c_moveSpeed);
+    if (pad.isButtonPressed(P, Btn::Down))  applyMove(forward, -c_moveSpeed);
+    if (pad.isButtonPressed(P, Btn::Right)) applyMove(right,    c_moveSpeed);
+    if (pad.isButtonPressed(P, Btn::Left))  applyMove(right,   -c_moveSpeed);
+
+    // ---- Render ----
     int parity = gpu.getParity();
     auto &ot = m_ots[parity];
     auto &clear = m_clear[parity];
@@ -69,22 +96,11 @@ void CubeScene::frame() {
     gpu.getNextClear(clear.primitive, c_bg);
     gpu.chain(clear);
 
-    // Camera world position: orbits around origin in the XZ plane at fixed radius.
-    // psyqo's Y rotation Ry(a) maps (0,0,-1) to (sin(a), 0, -cos(a)), so the camera
-    // world rotation by m_cameraAngle puts it at this position when the "base" is (0,0,-R).
-    psyqo::FixedPoint<> sinA = trig.sin(m_cameraAngle);
-    psyqo::FixedPoint<> cosA = trig.cos(m_cameraAngle);
-    psyqo::Vec3 cameraPos = {
-        .x = c_cameraRadius * sinA,
-        .y = 0.0_fp,
-        .z = -c_cameraRadius * cosA,
-    };
-
-    // View rotation = inverse of camera world rotation = Ry(-m_cameraAngle).
+    // View rotation = inverse of camera world yaw = Ry(-yaw).
     psyqo::Matrix33 viewRot =
-        psyqo::SoftMath::generateRotationMatrix33(-m_cameraAngle, psyqo::SoftMath::Axis::Y, trig);
+        psyqo::SoftMath::generateRotationMatrix33(-m_cameraYaw, psyqo::SoftMath::Axis::Y, trig);
 
-    // Each cube's self rotation: combine X and Y so it spins on two axes.
+    // Self-rotation for each cube: X + Y combined.
     psyqo::Matrix33 selfRotX =
         psyqo::SoftMath::generateRotationMatrix33(m_selfRot, psyqo::SoftMath::Axis::X, trig);
     psyqo::Matrix33 selfRotY =
@@ -92,7 +108,6 @@ void CubeScene::frame() {
     psyqo::Matrix33 selfRot;
     psyqo::SoftMath::multiplyMatrix33(selfRotX, selfRotY, &selfRot);
 
-    // Combined rotation written to GTE Rotation: viewRot * selfRot.
     psyqo::Matrix33 gteRot;
     psyqo::SoftMath::multiplyMatrix33(viewRot, selfRot, &gteRot);
     psyqo::GTE::writeUnsafe<psyqo::GTE::PseudoRegister::Rotation>(gteRot);
@@ -101,11 +116,10 @@ void CubeScene::frame() {
     unsigned quadCount = 0;
 
     for (unsigned cubeIdx = 0; cubeIdx < NUM_CUBES; ++cubeIdx) {
-        // View-space translation = viewRot * (cube_world_pos - camera_pos).
         psyqo::Vec3 relative = {
-            .x = c_cubePositions[cubeIdx].x - cameraPos.x,
-            .y = c_cubePositions[cubeIdx].y - cameraPos.y,
-            .z = c_cubePositions[cubeIdx].z - cameraPos.z,
+            .x = c_cubePositions[cubeIdx].x - m_cameraPos.x,
+            .y = c_cubePositions[cubeIdx].y - m_cameraPos.y,
+            .z = c_cubePositions[cubeIdx].z - m_cameraPos.z,
         };
         psyqo::Vec3 viewTranslation;
         psyqo::SoftMath::matrixVecMul3(viewRot, relative, &viewTranslation);
@@ -150,6 +164,5 @@ void CubeScene::frame() {
 
     gpu.chain(ot);
 
-    m_cameraAngle += 0.003_pi;
     m_selfRot += 0.006_pi;
 }
