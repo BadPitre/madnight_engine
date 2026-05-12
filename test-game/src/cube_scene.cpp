@@ -70,16 +70,17 @@ void CubeScene::frame() {
     gpu.chain(clear);
 
     // Camera world position: orbits around origin in the XZ plane at fixed radius.
-    // At m_cameraAngle = 0, camera sits at (0, 0, -R) looking toward +Z.
+    // psyqo's Y rotation Ry(a) maps (0,0,-1) to (sin(a), 0, -cos(a)), so the camera
+    // world rotation by m_cameraAngle puts it at this position when the "base" is (0,0,-R).
     psyqo::FixedPoint<> sinA = trig.sin(m_cameraAngle);
     psyqo::FixedPoint<> cosA = trig.cos(m_cameraAngle);
     psyqo::Vec3 cameraPos = {
-        .x = -c_cameraRadius * sinA,
+        .x = c_cameraRadius * sinA,
         .y = 0.0_fp,
         .z = -c_cameraRadius * cosA,
     };
 
-    // View rotation = inverse of camera's world Y-rotation, i.e. rotation by -m_cameraAngle.
+    // View rotation = inverse of camera world rotation = Ry(-m_cameraAngle).
     psyqo::Matrix33 viewRot =
         psyqo::SoftMath::generateRotationMatrix33(-m_cameraAngle, psyqo::SoftMath::Axis::Y, trig);
 
