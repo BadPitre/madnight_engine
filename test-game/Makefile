@@ -11,7 +11,7 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 SRCS := $(call rwildcard,src/,*.cpp)
 
 CXXFLAGS = -std=c++20
-CPPFLAGS_debug = -g -O0
+CPPFLAGS_Debug += -g
 
 include ../madnight-engine.mk
 include ../third_party/nugget/psyqo-paths/psyqo-paths.mk
