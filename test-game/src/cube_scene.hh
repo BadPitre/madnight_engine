@@ -14,13 +14,14 @@ class CubeScene final : public psyqo::Scene {
     static constexpr unsigned ORDERING_TABLE_SIZE = 1024;
     static constexpr unsigned NUM_CUBE_FACES = 6;
     static constexpr unsigned NUM_CUBES = 5;
-    static constexpr unsigned MAX_QUADS = NUM_CUBES * NUM_CUBE_FACES;
+    static constexpr unsigned NUM_ROOM_QUADS = 5; // floor + 4 walls
+    static constexpr unsigned MAX_QUADS = NUM_CUBES * NUM_CUBE_FACES + NUM_ROOM_QUADS;
 
   private:
     void start(StartReason reason) override;
     void frame() override;
 
-    psyqo::Vec3 m_cameraPos = {.x = 0.0, .y = 0.0, .z = -0.9};
+    psyqo::Vec3 m_cameraPos = {.x = 0.0, .y = 0.0, .z = -0.5};
     psyqo::Angle m_cameraYaw = 0;
     psyqo::Angle m_selfRot = 0;
 
