@@ -63,6 +63,10 @@ constexpr Quad3D c_roomQuads[CubeScene::NUM_ROOM_QUADS] = {
 
 constexpr psyqo::FixedPoint<> c_moveSpeed = 0.01_fp;
 
+// Fixed pitch for the isometric-ish camera. ~30 degrees down (atan(0.7/1.0)
+// roughly aims at the origin from the starting camera position).
+constexpr psyqo::Angle c_cameraPitch = 0.17_pi;
+
 } // namespace
 
 void CubeScene::start(StartReason) {
@@ -119,8 +123,15 @@ void CubeScene::frame() {
     gpu.getNextClear(clear.primitive, c_bg);
     gpu.chain(clear);
 
-    psyqo::Matrix33 viewRot =
+    // View rotation = inverse of (Ry(yaw) * Rx(pitch)) = Rx(-pitch) * Ry(-yaw).
+    // Yaw turns the world around the camera, then pitch tilts it for the high
+    // 3/4 angle.
+    psyqo::Matrix33 yawRot =
         psyqo::SoftMath::generateRotationMatrix33(-m_cameraYaw, psyqo::SoftMath::Axis::Y, trig);
+    psyqo::Matrix33 pitchRot =
+        psyqo::SoftMath::generateRotationMatrix33(-c_cameraPitch, psyqo::SoftMath::Axis::X, trig);
+    psyqo::Matrix33 viewRot;
+    psyqo::SoftMath::multiplyMatrix33(pitchRot, yawRot, &viewRot);
 
     eastl::array<psyqo::Vertex, 4> projected;
     unsigned quadCount = 0;

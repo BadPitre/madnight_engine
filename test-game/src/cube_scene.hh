@@ -21,7 +21,10 @@ class CubeScene final : public psyqo::Scene {
     void start(StartReason reason) override;
     void frame() override;
 
-    psyqo::Vec3 m_cameraPos = {.x = 0.0, .y = 0.0, .z = -0.5};
+    // Grandia-ish 3/4 camera: elevated above the scene and pitched down.
+    // In PS1 GPU convention +Y is screen-down, so a camera ABOVE the action
+    // sits at a negative Y.
+    psyqo::Vec3 m_cameraPos = {.x = 0.0, .y = -0.7, .z = -1.0};
     psyqo::Angle m_cameraYaw = 0;
     psyqo::Angle m_selfRot = 0;
 
